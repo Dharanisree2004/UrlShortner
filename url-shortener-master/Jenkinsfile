@@ -1,70 +1,53 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven 3.8.6'
+        jdk 'JDK 21'
+    }
+
     environment {
-        DOCKER_IMAGE = 'url-shortener'
-        CONTAINER_NAME = 'url-shortener-container'
-        GIT_REPO_URL = 'https://github.com/Dharanisree2004/UrlShortner.git'
-        MYSQL_PASSWORD = 'Dharani@2004'  // Direct password
+        // Example DB config (make sure Jenkins has access or you use a test profile)
+        SPRING_DATASOURCE_URL = 'jdbc:mysql://localhost:3306/urlshortenerdb'
+        SPRING_DATASOURCE_USERNAME = 'root'
+        SPRING_DATASOURCE_PASSWORD = 'Dharani@2004'
     }
 
     stages {
-        stage('Clone Repository') {
+
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', url: "$GIT_REPO_URL"
+                git branch: 'main', url: 'https://github.com/your-username/url-shortener.git'
             }
         }
 
         stage('Build with Maven') {
             steps {
-                dir('url-shortener-master') {
-                    sh '''
-                        export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
-                        export SPRING_DATASOURCE_USERNAME="root"
-                        export SPRING_DATASOURCE_PASSWORD="''' + env.MYSQL_PASSWORD + '''"
-
-                        mvn clean package -e -X
-                    '''
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Run Tests') {
             steps {
-                dir('url-shortener-master') {
-                    sh 'docker build -t $DOCKER_IMAGE .'
-                }
+                sh 'mvn test'
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Deploy') {
             steps {
-                script {
-                    sh """
-                        docker stop $CONTAINER_NAME || true
-                        docker rm $CONTAINER_NAME || true
-                    """
-                }
-            }
-        }
-
-        stage('Run New Container') {
-            steps {
-                sh '''
-                    docker run -d -p 8067:8067 \
-                    -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
-                    -e SPRING_DATASOURCE_USERNAME="root" \
-                    -e SPRING_DATASOURCE_PASSWORD="''' + env.MYSQL_PASSWORD + '''" \
-                    --name $CONTAINER_NAME $DOCKER_IMAGE
-                '''
+                echo "Deployment step (manual or script-based) can go here."
+                echo "Generated JAR: target/url-shortener-0.0.1-SNAPSHOT.jar"
+                // e.g., copy to a server with scp or run java -jar directly
             }
         }
     }
 
     post {
-        always {
-            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.xml', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.txt', allowEmptyArchive: true
+        success {
+            echo "Build & test completed successfully."
+        }
+        failure {
+            echo "Build failed."
         }
     }
 }
