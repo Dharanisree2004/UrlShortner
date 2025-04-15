@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql-container
+    restart: always
+    environment:
+      MYSQL_DATABASE: urlshortenerdb
+      MYSQL_ROOT_PASSWORD: yourpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: url-shortener
+    depends_on:
+      - mysql
+    ports:
+      - "8067:8067"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/urlshortenerdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: yourpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      APP_BASE_URL: http://localhost:8067
+    networks:
+      - default
+
+volumes:
+  mysql_data:
