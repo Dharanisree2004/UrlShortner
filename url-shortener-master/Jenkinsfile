@@ -21,7 +21,7 @@ pipeline {
                         sh '''
                             export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
                             export SPRING_DATASOURCE_USERNAME="root"
-                            export SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD
+                            export SPRING_DATASOURCE_PASSWORD="Dharani@2004"
                             
                             mvn clean package -e -X
                         '''
