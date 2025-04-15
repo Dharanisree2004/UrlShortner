@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3.8.6'
-        jdk 'JDK 21'
-    }
-
     environment {
         // Example DB config (make sure Jenkins has access or you use a test profile)
         SPRING_DATASOURCE_URL = 'jdbc:mysql://localhost:3306/urlshortenerdb'
