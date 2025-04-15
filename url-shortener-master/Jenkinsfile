@@ -4,28 +4,27 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'url-shortener'
         CONTAINER_NAME = 'url-shortener-container'
-        GIT_REPO_URL = 'https://github.com/Dharanisree2004/UrlShortner.git'  // Change to HTTPS URL
+        GIT_REPO_URL = 'https://github.com/Dharanisree2004/UrlShortner.git'
+        MYSQL_PASSWORD = 'Dharani@2004'  // Direct password
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "$GIT_REPO_URL"  // Use HTTPS URL, no need for SSH key
+                git branch: 'main', url: "$GIT_REPO_URL"
             }
         }
 
         stage('Build with Maven') {
             steps {
                 dir('url-shortener-master') {
-                    withCredentials([string(credentialsId: 'mysql-password', variable: 'MYSQL_PASSWORD')]) {  // Use the updated credential ID
-                        sh '''
-                            export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
-                            export SPRING_DATASOURCE_USERNAME="root"
-                            export SPRING_DATASOURCE_PASSWORD="Dharani@2004"
-                            
-                            mvn clean package -e -X
-                        '''
-                    }
+                    sh '''
+                        export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
+                        export SPRING_DATASOURCE_USERNAME="root"
+                        export SPRING_DATASOURCE_PASSWORD="''' + env.MYSQL_PASSWORD + '''"
+
+                        mvn clean package -e -X
+                    '''
                 }
             }
         }
@@ -51,15 +50,13 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                withCredentials([string(credentialsId: 'mysql-password', variable: 'MYSQL_PASSWORD')]) {  // Use the updated credential ID
-                    sh '''
-                        docker run -d -p 8067:8067 \
-                        -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
-                        -e SPRING_DATASOURCE_USERNAME="root" \
-                        -e SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD \
-                        --name $CONTAINER_NAME $DOCKER_IMAGE
-                    '''
-                }
+                sh '''
+                    docker run -d -p 8067:8067 \
+                    -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
+                    -e SPRING_DATASOURCE_USERNAME="root" \
+                    -e SPRING_DATASOURCE_PASSWORD="''' + env.MYSQL_PASSWORD + '''" \
+                    --name $CONTAINER_NAME $DOCKER_IMAGE
+                '''
             }
         }
     }
