@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    // tools {
-    //     maven 'Maven 3.8.6'
-    //     jdk 'JDK 21'
-    // }
-
     stages {
         stage('Checkout Code') {
             steps {
@@ -15,24 +10,19 @@ pipeline {
 
         stage('Build with Maven') {
             steps {
-                dir('url-shortener-master') {
-                    sh 'mvn clean package -DskipTests'
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Run Tests') {
             steps {
-                dir('url-shortener-master') {
-                    sh 'mvn test'
-                }
+                sh 'mvn test'
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying application...'
-                // your deployment steps here
             }
         }
     }
