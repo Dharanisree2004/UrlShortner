@@ -1,48 +1,45 @@
 pipeline {
     agent any
 
-    // environment {
-    //     // Example DB config (make sure Jenkins has access or you use a test profile)
-    //     SPRING_DATASOURCE_URL = 'jdbc:mysql://localhost:3306/urlshortenerdb'
-    //     SPRING_DATASOURCE_USERNAME = 'root'
-    //     SPRING_DATASOURCE_PASSWORD = 'Dharani@2004'
-    // }
+    tools {
+        maven 'Maven 3.8.6'
+        jdk 'JDK 21'
+    }
 
     stages {
-
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Dharanisree2004/UrlShortner.git'
+                git 'https://github.com/Dharanisree2004/UrlShortner.git'
             }
         }
 
         stage('Build with Maven') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                dir('url-shortener-master') {
+                    sh 'mvn clean package -DskipTests'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'mvn test'
+                dir('url-shortener-master') {
+                    sh 'mvn test'
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                echo "Deployment step (manual or script-based) can go here."
-                echo "Generated JAR: target/url-shortener-0.0.1-SNAPSHOT.jar"
-                // e.g., copy to a server with scp or run java -jar directly
+                echo 'Deploying application...'
+                // your deployment steps here
             }
         }
     }
 
     post {
-        success {
-            echo "Build & test completed successfully."
-        }
         failure {
-            echo "Build failed."
+            echo 'Build failed.'
         }
     }
 }
