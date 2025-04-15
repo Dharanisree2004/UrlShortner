@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'url-shortener'
+        CONTAINER_NAME = 'url-shortener-container'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/Dharanisree2004/UrlShortner'
+            }
+        }
+
+        stage('Build with Maven') {
+            steps {
+                dir('UrlShortener') {
+                    sh 'mvn clean package'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('UrlShortener') {
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
+            }
+        }
+
+        stage('Stop Existing Container') {
+            steps {
+                script {
+                    sh """
+                    if docker ps -a --format '{{.Names}}' | grep -Eq "^$CONTAINER_NAME\$"; then
+                        docker stop $CONTAINER_NAME
+                        docker rm $CONTAINER_NAME
+                    fi
+                    """
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                sh 'docker run -d -p 8067:8067 --name $CONTAINER_NAME $DOCKER_IMAGE'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '🎉 Deployment Successful!'
+        }
+        failure {
+            echo '❌ Build/Deploy Failed.'
+        }
+    }
+}
