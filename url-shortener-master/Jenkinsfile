@@ -2,13 +2,6 @@ pipeline {
     agent any
 
     environment {
-        MYSQL_URL = "jdbc:mysql://mysql:3306/urlshortenerdb"
-        MYSQL_USERNAME = "root"
-        // Using Jenkins credentials for password securely
-        MYSQL_PASSWORD = credentials('mysql-credentials')  // Store your password as 'mysql-credentials' in Jenkins credentials store
-        SPRING_DATASOURCE_URL = "jdbc:mysql://mysql:3306/urlshortenerdb"
-        SPRING_DATASOURCE_USERNAME = "root"
-        SPRING_DATASOURCE_PASSWORD = credentials('mysql-credentials')  // Use credentials store for the password
         DOCKER_IMAGE = 'url-shortener'
         CONTAINER_NAME = 'url-shortener-container'
     }
@@ -17,8 +10,16 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 dir('url-shortener-master') {
-                    // Run Maven with additional flags for debugging
-                    sh 'mvn clean package -e -X'
+                    // Use MySQL credentials from Jenkins credentials store
+                    withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                        sh '''
+                            export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
+                            export SPRING_DATASOURCE_USERNAME="root"
+                            export SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD
+                            
+                            mvn clean package -e -X
+                        '''
+                    }
                 }
             }
         }
@@ -34,10 +35,9 @@ pipeline {
         stage('Stop Old Container') {
             steps {
                 script {
-                    // Stop and remove old container if it exists
                     sh """
-                    docker stop $CONTAINER_NAME || true
-                    docker rm $CONTAINER_NAME || true
+                        docker stop $CONTAINER_NAME || true
+                        docker rm $CONTAINER_NAME || true
                     """
                 }
             }
@@ -45,9 +45,24 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                // Run the new container with the specified port and container name
-                sh 'docker run -d -p 8067:8067 --name $CONTAINER_NAME $DOCKER_IMAGE'
+                withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                    sh '''
+                        docker run -d -p 8067:8067 \
+                        -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
+                        -e SPRING_DATASOURCE_USERNAME="root" \
+                        -e SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD \
+                        --name $CONTAINER_NAME $DOCKER_IMAGE
+                    '''
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            // Optional: Archive test reports
+            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.xml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.txt', allowEmptyArchive: true
         }
     }
 }
