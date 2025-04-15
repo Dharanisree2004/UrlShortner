@@ -4,13 +4,13 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'url-shortener'
         CONTAINER_NAME = 'url-shortener-container'
-        GIT_REPO_URL = "git@github.com:Dharanisree2004/UrlShortner.git"  // Using SSH for Git
+        GIT_REPO_URL = 'https://github.com/Dharanisree2004/UrlShortner.git'  // Change to HTTPS URL
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: "$GIT_REPO_URL", credentialsId: 'github-ssh-key'  // Use SSH key for authentication
+                git branch: 'main', url: "$GIT_REPO_URL"  // Use HTTPS URL, no need for SSH key
             }
         }
 
