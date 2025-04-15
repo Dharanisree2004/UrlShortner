@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'url-shortener'
+        CONTAINER_NAME = 'url-shortener-container'
+    }
+
+    stages {
+        stage('Build with Maven') {
+            steps {
+                dir('url-shortener-master') {
+                    // Use MySQL credentials from Jenkins credentials store
+                    withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                        sh '''
+                            export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
+                            export SPRING_DATASOURCE_USERNAME="root"
+                            export SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD
+                            
+                            mvn clean package -e -X
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                dir('url-shortener-master') {
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                script {
+                    sh """
+                        docker stop $CONTAINER_NAME || true
+                        docker rm $CONTAINER_NAME || true
+                    """
+                }
+            }
+        }
+
+        stage('Run New Container') {
+            steps {
+                withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                    sh '''
+                        docker run -d -p 8067:8067 \
+                        -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
+                        -e SPRING_DATASOURCE_USERNAME="root" \
+                        -e SPRING_DATASOURCE_PASSWORD=$MYSQL_PASSWORD \
+                        --name $CONTAINER_NAME $DOCKER_IMAGE
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Optional: Archive test reports
+            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.xml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.txt', allowEmptyArchive: true
+        }
+    }
+}
