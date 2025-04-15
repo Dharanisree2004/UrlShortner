@@ -17,7 +17,7 @@ pipeline {
         stage('Build with Maven') {
             steps {
                 dir('url-shortener-master') {
-                    withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                    withCredentials([string(credentialsId: 'mysql-password', variable: 'MYSQL_PASSWORD')]) {  // Use the updated credential ID
                         sh '''
                             export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
                             export SPRING_DATASOURCE_USERNAME="root"
@@ -51,7 +51,7 @@ pipeline {
 
         stage('Run New Container') {
             steps {
-                withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
+                withCredentials([string(credentialsId: 'mysql-password', variable: 'MYSQL_PASSWORD')]) {  // Use the updated credential ID
                     sh '''
                         docker run -d -p 8067:8067 \
                         -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb" \
