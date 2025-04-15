@@ -4,13 +4,19 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'url-shortener'
         CONTAINER_NAME = 'url-shortener-container'
+        GIT_REPO_URL = "git@github.com:Dharanisree2004/UrlShortner.git"  // Using SSH for Git
     }
 
     stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: "$GIT_REPO_URL", credentialsId: 'github-ssh-key'  // Use SSH key for authentication
+            }
+        }
+
         stage('Build with Maven') {
             steps {
                 dir('url-shortener-master') {
-                    // Use MySQL credentials from Jenkins credentials store
                     withCredentials([string(credentialsId: 'mysql-credentials', variable: 'MYSQL_PASSWORD')]) {
                         sh '''
                             export SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/urlshortenerdb"
@@ -60,7 +66,6 @@ pipeline {
 
     post {
         always {
-            // Optional: Archive test reports
             archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.xml', allowEmptyArchive: true
             archiveArtifacts artifacts: 'url-shortener-master/target/surefire-reports/*.txt', allowEmptyArchive: true
         }
