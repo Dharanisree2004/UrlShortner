@@ -7,54 +7,33 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/Dharanisree2004/UrlShortner'
-            }
-        }
-
         stage('Build with Maven') {
             steps {
-                dir('UrlShortener') {
-                    sh 'mvn clean package'
-                }
+                sh 'mvn clean package'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('UrlShortener') {
-                    sh 'docker build -t $DOCKER_IMAGE .'
-                }
+                sh 'docker build -t $DOCKER_IMAGE .'
             }
         }
 
-        stage('Stop Existing Container') {
+        stage('Stop Old Container') {
             steps {
                 script {
                     sh """
-                    if docker ps -a --format '{{.Names}}' | grep -Eq "^$CONTAINER_NAME\$"; then
-                        docker stop $CONTAINER_NAME
-                        docker rm $CONTAINER_NAME
-                    fi
+                    docker stop $CONTAINER_NAME || true
+                    docker rm $CONTAINER_NAME || true
                     """
                 }
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run New Container') {
             steps {
                 sh 'docker run -d -p 8067:8067 --name $CONTAINER_NAME $DOCKER_IMAGE'
             }
-        }
-    }
-
-    post {
-        success {
-            echo '🎉 Deployment Successful!'
-        }
-        failure {
-            echo '❌ Build/Deploy Failed.'
         }
     }
 }
