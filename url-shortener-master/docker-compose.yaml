@@ -1,37 +1,32 @@
 version: '3.8'
-
 services:
   mysql:
-    image: mysql:8
-    container_name: mysql-container
-    restart: always
+    image: mysql:8.0
     environment:
+      MYSQL_ROOT_PASSWORD: Dharani@2004
       MYSQL_DATABASE: urlshortenerdb
-      MYSQL_ROOT_PASSWORD: yourpassword
+      MYSQL_USER: root
+      MYSQL_PASSWORD: Dharani@2004
     ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 30s
-      retries: 5
+      - "3306:3306"
+    networks:
+      - mynetwork
 
-  app:
-    build: .
-    container_name: url-shortener
-    depends_on:
-      mysql:
-        condition: service_healthy
-    ports:
-      - "8067:8067"
+  springboot:
+    image: your-springboot-image
+    build:
+      context: .
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/urlshortenerdb
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: yourpassword
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: "true"
-      APP_BASE_URL: http://localhost:8067
+      SPRING_DATASOURCE_PASSWORD: Dharani@2004
+    depends_on:
+      - mysql
+    ports:
+      - "8067:8067"
+    networks:
+      - mynetwork
 
-volumes:
-  mysql_data:
+networks:
+  mynetwork:
+    driver: bridge
